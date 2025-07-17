@@ -1,4 +1,4 @@
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -11,13 +11,16 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Evita a reinicialização do Firebase no Next.js
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
+// Função para inicializar o Firebase no lado do cliente de forma segura
+const getClientApp = () => {
+  if (getApps().length) {
+    return getApp();
+  }
 
+  const app = initializeApp(firebaseConfig);
+  return app;
+};
+
+const app = getClientApp();
 export const auth = getAuth(app);
 export const db = getFirestore(app);
