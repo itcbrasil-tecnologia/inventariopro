@@ -1,4 +1,5 @@
 "use client";
+
 import React, { ReactNode, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -82,14 +83,16 @@ export default function UserLayout({ children }: { children: ReactNode }) {
   }
 
   if (userRole !== "USER") {
+    // Se não for um técnico, redireciona para o dashboard principal
     router.push("/dashboard");
-    return null;
+    return null; // Retorna null para evitar renderizar qualquer coisa enquanto redireciona
   }
 
+  // Se o usuário for um técnico, exibe a navbar do técnico e o conteúdo da página
   return (
     <div className="min-h-screen bg-slate-100">
       <UserNavbar />
-      {children}
+      <main>{children}</main>
     </div>
   );
 }
