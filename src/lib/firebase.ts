@@ -1,17 +1,23 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Cole suas configurações do Firebase aqui
 const firebaseConfig = {
-  apiKey: "AIzaSyADiMqW9aC2rpFD2jIbufwcV2mCwPk0vWU",
-  authDomain: "itcbrasil-b45c6.firebaseapp.com",
-  projectId: "itcbrasil-b45c6",
-  storageBucket: "itcbrasil-b45c6.firebasestorage.app",
-  messagingSenderId: "544074200281",
-  appId: "1:544074200281:web:7502259d58e49a60483ac8",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+// Evita a reinicialização do Firebase no Next.js
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
