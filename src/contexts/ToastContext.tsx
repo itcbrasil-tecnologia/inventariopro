@@ -5,7 +5,8 @@ import React, {
   useState,
   useCallback,
   ReactNode,
-} from "react";
+  useRef,
+} from "react"; // useRef importado aqui
 
 interface ToastMessage {
   id: number;
@@ -20,15 +21,23 @@ interface ToastContextType {
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const addToast = useCallback(
     (message: string, type: "success" | "error" = "success") => {
+      // Limpa o timer anterior para que a notificação antiga desapareça imediatamente
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+
       const id = Date.now();
-      setToasts((prev) => [...prev, { id, message, type }]);
-      setTimeout(
-        () => setToasts((prev) => prev.filter((t) => t.id !== id)),
-        4000
-      );
+      setToast({ id, message, type });
+
+      // Define um novo timer para remover a notificação atual
+      toastTimerRef.current = setTimeout(() => {
+        setToast(null);
+      }, 3000);
     },
     []
   );
@@ -36,17 +45,17 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center space-y-2">
-        {toasts.map((toast) => (
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center space-y-2">
+        {toast && (
           <div
             key={toast.id}
-            className={`px-4 py-3 rounded-lg shadow-lg text-white font-semibold animate-fade-in-up ${
+            className={`px-4 py-3 rounded-lg shadow-lg text-white font-semibold animate-fade-in-down ${
               toast.type === "success" ? "bg-emerald-500" : "bg-red-500"
             }`}
           >
             {toast.message}
           </div>
-        ))}
+        )}
       </div>
     </ToastContext.Provider>
   );

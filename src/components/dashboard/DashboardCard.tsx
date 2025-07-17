@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Icon } from "@/components/ui/Icon";
-import { ICONS } from "@/lib/icons";
+// A importação de ICONS foi removida pois não era utilizada aqui.
 
 interface DashboardCardProps {
   title: string;

@@ -1,8 +1,3 @@
-/**
- * =================================================================
- * ARQUIVO: src/app/(user)/scanner/page.tsx
- * =================================================================
- */
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
@@ -10,6 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
 import * as Tone from "tone";
+import { Modal } from "@/components/ui/Modal";
+import { useRouter } from "next/navigation";
 
 interface MobileUnit {
   id: string;
@@ -24,6 +21,7 @@ interface Notebook {
 export default function TechnicianScannerPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const router = useRouter();
 
   const [mobileUnits, setMobileUnits] = useState<MobileUnit[]>([]);
   const [allNotebooks, setAllNotebooks] = useState<Notebook[] | null>(null);
@@ -34,16 +32,19 @@ export default function TechnicianScannerPage() {
 
   const [isLoading, setIsLoading] = useState(true);
 
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [scanStartTime, setScanStartTime] = useState<Date | null>(null);
+  const [scanEndTime, setScanEndTime] = useState<Date | null>(null);
+
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const scannerStateRef = useRef<Html5QrcodeScannerState | null>(null);
   const synthRef = useRef<Tone.Synth | null>(null);
 
-  // CORREÇÃO: Inicializando o useRef com null.
+  // CORREÇÃO: Inicializando o useRef com null e ajustando a tipagem.
   const handleScanCallbackRef = useRef<((text: string) => void) | null>(null);
 
   // Inicializa o sintetizador de áudio uma única vez
   useEffect(() => {
-    // Cria a instância do synth e a conecta ao destino (saída de áudio)
     const synth = new Tone.Synth();
     synth.toDestination();
     synthRef.current = synth;
@@ -73,22 +74,23 @@ export default function TechnicianScannerPage() {
     (decodedText: string) => {
       if (!masterNotebookList || masterNotebookList.length === 0) return;
 
-      if (masterNotebookList.some((nb) => nb.id === decodedText)) {
-        setScannedItems((prevScannedItems) => {
-          if (prevScannedItems.includes(decodedText)) {
-            addToast(`Item ${decodedText} já foi escaneado.`, "error");
-            synthRef.current?.triggerAttackRelease("C4", "8n");
-            return prevScannedItems;
-          } else {
-            addToast(`Item ${decodedText} registrado!`, "success");
-            synthRef.current?.triggerAttackRelease("C5", "8n");
-            return [...prevScannedItems, decodedText];
-          }
-        });
-      } else {
-        addToast(`Item ${decodedText} não pertence a esta UM.`, "error");
-        synthRef.current?.triggerAttackRelease("A3", "8n");
-      }
+      setScannedItems((prevScannedItems) => {
+        if (prevScannedItems.includes(decodedText)) {
+          addToast(`Item ${decodedText} já foi escaneado.`, "error");
+          synthRef.current?.triggerAttackRelease("C4", "8n");
+          return prevScannedItems;
+        }
+
+        if (masterNotebookList.some((nb) => nb.id === decodedText)) {
+          addToast(`Item ${decodedText} registrado!`, "success");
+          synthRef.current?.triggerAttackRelease("C5", "8n");
+          return [...prevScannedItems, decodedText];
+        } else {
+          addToast(`Item ${decodedText} não pertence a esta UM.`, "error");
+          synthRef.current?.triggerAttackRelease("A3", "8n");
+          return prevScannedItems;
+        }
+      });
     },
     [masterNotebookList, addToast]
   );
@@ -153,6 +155,7 @@ export default function TechnicianScannerPage() {
       );
       setMasterNotebookList(notebooksForUnit);
       setScannedItems([]);
+      setScanStartTime(new Date());
       startScanner();
     } else {
       stopScanner();
@@ -165,7 +168,20 @@ export default function TechnicianScannerPage() {
 
   const handleReset = () => {
     setScannedItems([]);
+    setScanStartTime(new Date());
     addToast("Contagem reiniciada.", "success");
+  };
+
+  const handleFinalizeCount = () => {
+    stopScanner();
+    setScanEndTime(new Date());
+    setIsSummaryModalOpen(true);
+  };
+
+  const handleConcludeSummary = () => {
+    addToast("Contagem registrada com sucesso!", "success");
+    setIsSummaryModalOpen(false);
+    router.push("/");
   };
 
   const missingItems = masterNotebookList.filter(
@@ -179,7 +195,9 @@ export default function TechnicianScannerPage() {
           <h1 className="text-2xl font-bold text-slate-900">
             Leitura de QR Code
           </h1>
-          <p className="text-slate-600">Olá, {user?.name || user?.email}!</p>
+          <p className="text-slate-600">
+            Selecione uma UM para iniciar a contagem.
+          </p>
         </header>
 
         <div className="bg-white p-4 rounded-lg shadow-md mb-4">
@@ -187,7 +205,7 @@ export default function TechnicianScannerPage() {
             htmlFor="um-selector"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Selecione a Unidade Móvel (UM)
+            Unidade Móvel (UM)
           </label>
           <select
             id="um-selector"
@@ -236,12 +254,14 @@ export default function TechnicianScannerPage() {
               >
                 Reiniciar
               </button>
-              <button className="bg-red-600 text-white font-bold py-3 px-6 rounded-lg">
+              <button
+                onClick={handleFinalizeCount}
+                className="bg-red-600 text-white font-bold py-3 px-6 rounded-lg"
+              >
                 Finalizar Contagem
               </button>
             </div>
 
-            {/* LISTAS */}
             <div>
               <div className="mb-4">
                 <h3 className="font-bold text-red-700 mb-2">
@@ -279,6 +299,63 @@ export default function TechnicianScannerPage() {
           </>
         )}
       </div>
+
+      <Modal
+        title="Resumo da Contagem"
+        isOpen={isSummaryModalOpen}
+        onClose={() => setIsSummaryModalOpen(false)}
+      >
+        <div className="space-y-3 text-sm">
+          <p>
+            <strong>Técnico:</strong> {user?.name}
+          </p>
+          <p>
+            <strong>UM:</strong>{" "}
+            {mobileUnits.find((u) => u.id === selectedUnitId)?.name}
+          </p>
+          <p>
+            <strong>Data:</strong> {new Date().toLocaleDateString("pt-BR")}
+          </p>
+          <p>
+            <strong>Início:</strong>{" "}
+            {scanStartTime?.toLocaleTimeString("pt-BR")}
+          </p>
+          <p>
+            <strong>Fim:</strong> {scanEndTime?.toLocaleTimeString("pt-BR")}
+          </p>
+          <hr className="my-2" />
+          <p>
+            <strong>Dispositivos Cadastrados:</strong>{" "}
+            {masterNotebookList.length}
+          </p>
+          <p className="text-green-600">
+            <strong>Escaneados:</strong> {scannedItems.length}
+          </p>
+          <p className="text-red-600">
+            <strong>Não Escaneados:</strong> {missingItems.length}
+          </p>
+
+          {missingItems.length > 0 && (
+            <div className="pt-2">
+              <p className="font-bold">Itens Faltantes:</p>
+              <ul className="list-disc list-inside h-24 overflow-y-auto bg-slate-50 p-2 rounded">
+                {missingItems.map((item) => (
+                  <li key={item.id}>{item.id}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-4">
+            <button
+              onClick={handleConcludeSummary}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+            >
+              Concluir
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
