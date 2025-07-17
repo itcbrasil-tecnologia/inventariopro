@@ -1,7 +1,8 @@
 "use client";
+
 import React from "react";
 import { AdminPageLayout } from "@/components/layout/AdminPageLayout";
-import { DashboardCard } from "@/components/dashboard/DashboardCard"; // Importação corrigida
+import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { ICONS } from "@/lib/icons";
 
 export default function DashboardPage() {

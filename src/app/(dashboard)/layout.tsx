@@ -1,4 +1,5 @@
 "use client";
+
 import React, { ReactNode } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,10 +19,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   if (userRole !== "ADMIN" && userRole !== "MASTER") {
+    // Se não for admin/master, redireciona para a tela do scanner
     router.push("/scanner");
-    return null;
+    return null; // Retorna null para evitar renderizar qualquer coisa enquanto redireciona
   }
 
+  // Se for admin, mas tentar acessar a página de usuários sem ser MASTER, redireciona
   if (pathname.startsWith("/usuarios") && userRole !== "MASTER") {
     router.push("/dashboard");
     return null;

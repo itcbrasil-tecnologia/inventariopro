@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import { Icon } from "@/components/ui/Icon"; // Importação adicionada
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ICONS } from "@/lib/icons"; // Importação adicionada
+import { Icon } from "@/components/ui/Icon";
+import { ICONS } from "@/lib/icons";
 
 interface DashboardCardProps {
   title: string;
